@@ -16,8 +16,15 @@
                 <input type="text" name="title" placeholder="Product Title" class="form-control">
             </div>
             <div class="col-md-2">
-                <select name="variant" id="" class="form-control">
-                    <option selected disabled>--Select A Variant--</option>
+                <select name="variant" class="form-control">
+                    <option selected disabled>-- Select A Variant --</option>
+                    {% for key, value in variants.items %}
+                    <optgroup label="{{key}}"></optgroup>
+                    {% for variant in value %}
+                    <option>{{variant}}</option>
+                    {% endfor %}
+                    </optgroup>
+                    {% endfor %}
 
                 </select>
             </div>
@@ -55,9 +62,10 @@
                 </thead>
 
                 <tbody>
+                    {% if products %}
                     {% for product in products %}
                     <tr>
-                        <td>{{forloop.counter}}</td>
+                        <td>{{product.id}}</td>
                         <td>{{product.title}} <br> Created at : {{product.created_at}}</td>
                         <td>{{product.description}}</td>
 
@@ -78,9 +86,11 @@
                                 </dd>
                                 {% endfor %}
                             </dl>
+                            {% if product.variants|length > 2 %}
                             <button onclick="$('#variant-{{forloop.counter}}').toggleClass('h-auto')"
                                 class="btn btn-sm btn-link">Show more
                             </button>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
@@ -89,6 +99,9 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    {% else %}
+                    <h4>No Products meet the search criteria.</h4>
+                    {% endif %}
                 </tbody>
 
             </table>
@@ -106,24 +119,29 @@
                     <ul class="pagination">
                         {% if products.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ products.previous_page_number }}">&larr;</a>
+                            <a class="page-link"
+                                href="?page={{ products.previous_page_number }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.price_from %}&price_from={{ request.GET.price_from }}{% endif %}{% if request.GET.price_to %}&price_to={{ request.GET.price_to }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}">&larr;</a>
                         </li>
                         {% endif %}
 
                         {% for page_num in products.paginator.page_range %}
                         <li class="page-item {% if products.number == page_num %}active{% endif %}">
-                            <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                            <a class="page-link"
+                                href="?page={{ page_num }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.price_from %}&price_from={{ request.GET.price_from }}{% endif %}{% if request.GET.price_to %}&price_to={{ request.GET.price_to }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}">
+                                {{page_num }}</a>
                         </li>
                         {% endfor %}
+
                         {% if products.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ products.next_page_number }}">&rarr;</a>
+                            <a class="page-link"
+                                href="?page={{ products.next_page_number }}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.price_from %}&price_from={{ request.GET.price_from }}{% endif %}{% if request.GET.price_to %}&price_to={{ request.GET.price_to }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}">&rarr;</a>
                         </li>
                         {% endif %}
                     </ul>
                 </div>
-
             </div>
+
         </div>
     </div>
 </div>
