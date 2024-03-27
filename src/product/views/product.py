@@ -128,7 +128,7 @@ def list_product(request):
         products.append(product)
 
     # Pagination
-    paginator = Paginator(products, min(len(products), 2))
+    paginator = Paginator(products, min(len(products), 3))
     page_number = request.GET.get('page')
 
     try:
@@ -149,6 +149,6 @@ def edit_product(request, product_id):
         if product_form.is_valid():
             product_form.save()
             # product_variant_form.save()
-            return redirect(list_product(request))
+            return redirect(reverse('product:list.product'))
 
     return render(request, 'products/edit.html', {'product_form': product_form})

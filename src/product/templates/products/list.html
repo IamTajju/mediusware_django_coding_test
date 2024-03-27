@@ -65,7 +65,11 @@
                     {% if products %}
                     {% for product in products %}
                     <tr>
-                        <td>{{product.id}}</td>
+                        <td>
+                            {% with total_count=forloop.counter0|add:products.start_index %}
+                            {{ total_count }}
+                            {% endwith %}
+                        </td>
                         <td>{{product.title}} <br> Created at : {{product.created_at}}</td>
                         <td>{{product.description}}</td>
 
@@ -114,7 +118,7 @@
             <div class="col-md-6">
                 <p>Showing {{products.start_index}} to {{products.end_index}} out of {{products.paginator.count}}</p>
             </div>
-            <div class="col-md-2 align-self-end">
+            <div class="col-md-4 align-self-end">
                 <div class="pagination">
                     <ul class="pagination">
                         {% if products.has_previous %}
