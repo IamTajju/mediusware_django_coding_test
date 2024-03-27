@@ -1,13 +1,15 @@
+from django.urls import reverse
 from django.views import generic
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from product.models import Variant, Product, ProductVariantPrice, ProductVariant
+from product.models import Variant, Product, ProductVariantPrice, ProductVariant, ProductImage
 from django.db.models import Q
 from product.utils import create_variants_list
 from django.http import HttpResponse
 from django.http import JsonResponse
 import json
 from django.db import transaction
+from product.forms import ProductForm, ProductVariantForm, ProductVariantPriceForm
 
 
 class CreateProductView(generic.TemplateView):
@@ -19,6 +21,58 @@ class CreateProductView(generic.TemplateView):
         context['product'] = True
         context['variants'] = list(variants.all())
         return context
+
+    def post(self, request, *args, **kwargs):
+        # Parse JSON data from the request
+        data = json.loads(request.body)
+
+        # Extract product data
+        product_name = data.get('productName')
+        product_sku = data.get('productSKU')
+        product_description = data.get('description')
+        product_variants = data.get('productVariants')
+        product_variant_prices = data.get('productVariantPrices')
+
+        try:
+            with transaction.atomic():
+                # Save product
+                product = Product.objects.create(
+                    title=product_name,
+                    sku=product_sku,
+                    description=product_description
+                )
+
+                # Save product variants
+                for item in product_variants:
+                    variant_id = item['option']
+                    tags = item['tags']
+                    variant = Variant.objects.get(id=variant_id)
+
+                    product_variants = [ProductVariant.objects.create(
+                        variant_title=tag, variant=variant, product=product) for tag in tags]
+
+                # Save product variant prices
+                for item in product_variant_prices:
+                    product_variants = [ProductVariant.objects.get(
+                        variant_title=title, product=product) for title in item['title'].split('/') if title != '']
+
+                    price = item['price']
+                    stock = item['stock']
+                    ProductVariantPrice.objects.create(
+                        product_variant_one=product_variants[0],
+                        product_variant_two=product_variants[1],
+                        product_variant_three=product_variants[2],
+                        price=price,
+                        stock=stock,
+                        product=product
+                    )
+
+        except Exception as e:
+            error_message = str(e)
+            print(error_message)
+            return JsonResponse({'error': error_message}, status=500)
+        else:
+            return JsonResponse({'message': 'Product created successfully'}, status=200)
 
 
 def list_product(request):
@@ -87,86 +141,14 @@ def list_product(request):
     return render(request, 'products/list.html', {'products': products, 'variants': variants})
 
 
-def create_product(request):
-    # Parse JSON data from the request
-    data = json.loads(request.body)
+def edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    product_form = ProductForm(request.POST or None, instance=product)
 
-    # Extract product data
-    product_name = data.get('productName')
-    product_sku = data.get('productSKU')
-    product_description = data.get('description')
-    product_variants = data.get('productVariants')
-    product_variant_prices = data.get('productVariantPrices')
-    print(product_name)
-    print(product_variant_prices)
+    if request.method == 'POST':
+        if product_form.is_valid():
+            product_form.save()
+            # product_variant_form.save()
+            return redirect(list_product(request))
 
-    try:
-        with transaction.atomic():
-            # Save product
-            product = Product.objects.create(
-                title=product_name,
-                sku=product_sku,
-                description=product_description
-            )
-            # Save product variants
-            for item in product_variants:
-                variant_id = item['option']
-                tags = item['tags']
-                variant = Variant.objects.get(id=variant_id)
-
-                product_variants = [ProductVariant.objects.create(
-                    variant_title=tag, variant=variant, product=product) for tag in tags]
-
-            # Save product variant prices
-            for item in product_variant_prices:
-                product_variants = [ProductVariant.objects.get(
-                    variant_title=title, product=product) for title in item['title'].split('/') if title is not '']
-
-                if len(product_variants) != 3:
-                    raise Exception(
-                        "Error in product variant data's cardinality.")
-
-                price = item['price']
-                stock = item['stock']
-                ProductVariantPrice.objects.create(
-                    product_variant_one=product_variants[0],
-                    product_variant_two=product_variants[1],
-                    product_variant_three=product_variants[2],
-                    price=price,
-                    stock=stock,
-                    product=product
-                )
-
-    except Exception as e:
-        error_message = str(e)
-        print(error_message)
-        return JsonResponse({'error': error_message}, status=500)
-    else:
-        return JsonResponse({'message': 'Product created successfully'}, status=200)
-
-    # # Save product variant prices
-    # for variant_price_data in product_variant_prices:
-    #     variant_price_title = variant_price_data['title']
-    #     variant_price_price = variant_price_data['price']
-    #     variant_price_stock = variant_price_data['stock']
-
-    #     # Split variant title into tags
-    #     variant_tags = variant_price_title.split('/')
-
-    #     # Get product variants for this combination
-    #     product_variants = ProductVariant.objects.filter(
-    #         variant_title__in=variant_tags)
-
-    #     # Create product variant price for this combination
-    #     ProductVariantPrice.objects.create(
-    #         product_variant_one=product_variants[0],
-    #         product_variant_two=product_variants[1] if len(
-    #             product_variants) > 1 else None,
-    #         product_variant_three=product_variants[2] if len(
-    #             product_variants) > 2 else None,
-    #         price=variant_price_price,
-    #         stock=variant_price_stock,
-    #         product=product
-    #     )
-
-    return JsonResponse({'message': 'Product created successfully'})
+    return render(request, 'products/edit.html', {'product_form': product_form})

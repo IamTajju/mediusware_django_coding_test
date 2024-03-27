@@ -20,6 +20,7 @@ const CreateProduct = (props) => {
     const [productName, setProductName] = useState('');
     const [productSKU, setProductSKU] = useState('');
     const [description, setDescription] = useState('');
+    const [imageFile, setImageFile] = useState(null);
 
     console.log(typeof props.variants)
     // handle click event of the Add button
@@ -81,24 +82,6 @@ const CreateProduct = (props) => {
         return ans;
     }
 
-    // // Save product
-    // const saveProduct = (event) => {
-    //     event.preventDefault();
-    //     const csrftoken = getCookie('csrftoken');
-    //     axios.defaults.headers.post['X-CSRFToken'] = csrftoken;
-    //     console.log(productVariantPrices)
-    //     console.log(productVariants)
-    //     axios.post('http://127.0.0.1:8000/product/create_product/', 'yes')
-    //         .then(response => {
-    //             // Handle successful response
-    //             console.log('Product saved successfully:', response.data);
-    //         })
-    //         .catch(error => {
-    //             // Handle error
-    //             console.error('Error saving product:', error);
-    //         });
-    // };
-
     let saveProduct = (event) => {
         event.preventDefault();
 
@@ -114,32 +97,28 @@ const CreateProduct = (props) => {
             return;
         }
 
-
-        // Get product data from inputs
         // Get CSRF token
         const csrftoken = getCookie('csrftoken');
         axios.defaults.headers.post['X-CSRFToken'] = csrftoken;
-        // Send POST request with CSRF token in headers
-        axios.post('http://127.0.0.1:8000/product/create_product/', {
+        axios.post('http://127.0.0.1:8000/product/create/', {
             productName: productName,
             productSKU: productSKU,
             description: description,
             productVariants: productVariants,
-            productVariantPrices: productVariantPrices
+            productVariantPrices: productVariantPrices,
+            productImage: imageFile
         })
             .then(response => {
-                // Handle successful response
                 console.log('Product saved successfully:', response.data);
                 alert("Product Saved Successfully.");
             })
             .catch(error => {
-                // Handle error
                 console.error('Error saving product:', error);
                 alert(error);
             });
     };
 
-    // Helper function to get CSRF token from cookies
+    // get CSRF token from cookies
     const getCookie = (name) => {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -185,7 +164,7 @@ const CreateProduct = (props) => {
                                 <h6 className="m-0 font-weight-bold text-primary">Media</h6>
                             </div>
                             <div className="card-body border">
-                                <Dropzone onDrop={acceptedFiles => console.log(acceptedFiles)}>
+                                <Dropzone onDrop={acceptedFiles => setImageFile(acceptedFiles[0])}>
                                     {({ getRootProps, getInputProps }) => (
                                         <section>
                                             <div {...getRootProps()}>
